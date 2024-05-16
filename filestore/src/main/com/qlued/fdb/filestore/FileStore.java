@@ -24,26 +24,31 @@ public class FileStore {
 
     private static class WriteOperation {
 
+        private byte[] data;
+
         private long startNanos = System.nanoTime();
 
         private int offset = 0;
 
         private int left;
 
-        WriteOperation(int len) {
-            this.left = len;
+        WriteOperation(byte[] value) {
+            this.data = value;
+            this.left = value.length;
         }
 
         int offset() {
             return offset;
         }
 
-        int consumeChunkLen() {
+        public byte[] chunk() {
             int len = CHUNK_MAX_SIZE <= left ? CHUNK_MAX_SIZE : left;
-            offset += len;
-            left -= len;
-            log.info("Consumed " + len + " bytes");
-            return len;
+            try {
+                return Arrays.copyOfRange(data, offset, offset + len);
+            } finally {
+                offset += len;
+                left -= len;
+            }
         }
 
         public boolean complete() {
@@ -71,17 +76,19 @@ public class FileStore {
             });
 
             // Upload the data in chunks, using multiple transactions if necessary.
-            WriteOperation write = new WriteOperation(value.length);
+            WriteOperation write = new WriteOperation(value);
             while (!write.complete()) {
                 // Write multiple chunks in the same transaction
                 // until we write all the data or run out of time.
                 db.run(tr -> {
                     do {
-                        byte[] chunk = Arrays.copyOfRange(value, write.offset(), write.offset() + write.consumeChunkLen());
+                        int offset = write.offset();
+                        byte[] chunk = write.chunk();
                         tr.set(
-                                Tuple.from(key, DATA, write.offset()).pack(),
+                                Tuple.from(key, DATA, offset).pack(),
                                 Tuple.from(chunk).pack()
                         );
+                        log.info("Write chunk offset " + offset + " len " + chunk.length);
                     } while (write.continueInTx());
                     return null;
                 });
