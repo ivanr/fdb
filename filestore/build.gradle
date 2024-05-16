@@ -32,6 +32,12 @@ sourceSets {
     }
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(22))
+    }
+}
+
 compileJava {
     options.compilerArgs += ["-parameters"]
 }
