@@ -10,6 +10,8 @@ Todos
 
 - After a failed upload, cleanup partial data
 
+- Listing operation will fail if transaction limits are exceeded
+
 - How do we atomically update/replace blobs? Use indirection?
 
 - Add support for buckets
