@@ -1,4 +1,4 @@
-package com.qlued.fdb.filestore;
+package com.qlued.blobstore;
 
 import java.util.Arrays;
 
@@ -18,7 +18,7 @@ public class WriteOperation {
     }
 
     public byte[] chunk() {
-        int len = FileStore.CHUNK_MAX_SIZE <= left ? FileStore.CHUNK_MAX_SIZE : left;
+        int len = BlobStore.CHUNK_MAX_SIZE <= left ? BlobStore.CHUNK_MAX_SIZE : left;
         try {
             return Arrays.copyOfRange(data, offset, offset + len);
         } finally {
@@ -32,7 +32,7 @@ public class WriteOperation {
     }
 
     public boolean continueInTx() {
-        return (left > 0) && (System.nanoTime() - startNanos < FileStore.TX_TIME_LIMIT_NANOS);
+        return (left > 0) && (System.nanoTime() - startNanos < BlobStore.TX_TIME_LIMIT_NANOS);
     }
 
     int offset() {

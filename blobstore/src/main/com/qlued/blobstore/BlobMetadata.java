@@ -1,11 +1,11 @@
-package com.qlued.fdb.filestore;
+package com.qlued.blobstore;
 
 import lombok.Data;
 
 import java.time.Instant;
 
 @Data
-public class FileMetadata {
+public class BlobMetadata {
 
     private String name;
 

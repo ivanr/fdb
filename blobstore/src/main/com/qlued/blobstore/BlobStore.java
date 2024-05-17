@@ -1,4 +1,4 @@
-package com.qlued.fdb.filestore;
+package com.qlued.blobstore;
 
 import com.apple.foundationdb.Database;
 import com.apple.foundationdb.FDB;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class FileStore {
+public class BlobStore {
 
     private static final String DATA_PREFIX = "filestore/data/";
 
@@ -32,18 +32,18 @@ public class FileStore {
 
     static {
         kryo = new Kryo();
-        kryo.register(FileMetadata.class);
+        kryo.register(BlobMetadata.class);
         kryo.register(Instant.class);
     }
 
-    public FileStore() {
+    public BlobStore() {
         fdb = FDB.selectAPIVersion(730);
     }
 
     public void put(String key, byte[] value) {
 
         byte[] metaKey = Tuple.from(METADATA_PREFIX, key).pack();
-        FileMetadata meta = new FileMetadata();
+        BlobMetadata meta = new BlobMetadata();
 
         try (Database db = fdb.open()) {
 
@@ -87,27 +87,27 @@ public class FileStore {
         }
     }
 
-    private byte[] serialize(FileMetadata meta) {
+    private byte[] serialize(BlobMetadata meta) {
         try (Output output = new Output(new ByteArrayOutputStream())) {
             kryo.writeObject(output, meta);
             return output.getBuffer();
         }
     }
 
-    private FileMetadata deserialize(byte[] data) {
+    private BlobMetadata deserialize(byte[] data) {
         try (Input input = new Input(new ByteArrayInputStream(data))) {
-            return kryo.readObject(input, FileMetadata.class);
+            return kryo.readObject(input, BlobMetadata.class);
         }
     }
 
-    public List<FileMetadata> list() {
-        List<FileMetadata> files = new ArrayList<>();
+    public List<BlobMetadata> list() {
+        List<BlobMetadata> files = new ArrayList<>();
 
         try (Database db = fdb.open()) {
             db.run(tr -> {
                 for (KeyValue kv : tr.getRange(Tuple.from(METADATA_PREFIX).range())) {
                     String name = Tuple.fromBytes(kv.getKey()).getString(1);
-                    FileMetadata meta = deserialize(kv.getValue());
+                    BlobMetadata meta = deserialize(kv.getValue());
                     meta.setName(name);
                     files.add(meta);
                 }
