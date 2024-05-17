@@ -14,7 +14,14 @@ Todos
 
 - Listing operation will fail if transaction limits are exceeded
 
-- How do we atomically update/replace blobs? Use indirection?
+- If we read across transactions, it's possible that the underlying blob changes;
+  if we switch to unique blob identifiers that won't be an issue. The worse that
+  could happen is that a blob is deleted.
+
+- How do we atomically update/replace blobs? Use indirection? On a related note,
+  we have no protection for concurrent access.
+
+- Option to control if an existing blog will be overwritten
 
 - Add support for buckets
 
