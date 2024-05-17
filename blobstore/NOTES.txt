@@ -1,0 +1,37 @@
+
+Todos
+=====
+
+- Use nicer keys; no need to use tuples
+
+- Store chunk size in the metadata
+
+- Add support for blob attributes
+
+- After a failed upload, cleanup partial data
+
+- How do we atomically update/replace blobs? Use indirection?
+
+- Add support for buckets
+
+- TTL, size limits (FIFO)
+
+- - For portability, use JSON to serialize blob metadata
+
+
+Resources
+=========
+
+- https://apple.github.io/foundationdb/data-modeling.html
+
+- https://apple.github.io/foundationdb/javadoc/
+
+
+Notes
+=====
+
+- Remove all data;
+
+  $ fdbcli
+  fdb> writemode on
+  fdb> clearrange "" \xFF

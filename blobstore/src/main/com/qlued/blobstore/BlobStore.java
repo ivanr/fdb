@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +29,18 @@ public class BlobStore {
 
     private static final byte[] TUPLE_DELIMITER = new byte[]{0x02};
 
-    static final int CHUNK_MAX_SIZE = 1;
+    // FoundationDB has a limit of 10KB per key value.
+    static final int CHUNK_MAX_SIZE_BYTES = 10_000;
 
     private static final long NANOS_PER_MILLISECOND = 1_000_000L;
 
-    static final long TX_TIME_LIMIT_NANOS = 10 * NANOS_PER_MILLISECOND;
+    // FoundationDB limits transactions to 5 seconds.
+    static final long TX_TIME_LIMIT_NANOS = 4_000 * NANOS_PER_MILLISECOND;
+
+    // FoundationDB limits affected data within a transaction to 10 MB. I've
+    // seen smaller sizes recommended (e.g., 1MB), but in my limited testing
+    // of one blob write that results in 3x worse throughput.
+    public static final int TX_SIZE_LIMIT_BYTES = 9_000_000;
 
     private FDB fdb;
 
@@ -48,16 +57,24 @@ public class BlobStore {
     }
 
     public void put(String key, byte[] value) {
+        WriteOp op = WriteOp.from(value);
+        put(key, op);
+    }
+
+    public void put(String key, InputStream inputStream) {
+        WriteOp op = WriteOp.from(inputStream);
+        put(key, op);
+    }
+
+    public void put(String key, WriteOp op) {
 
         byte[] metaKey = Tuple.from(METADATA_PREFIX, key).pack();
         BlobMetadata meta = new BlobMetadata();
 
         try (Database db = fdb.open()) {
 
-            WriteOperation write = new WriteOperation(value);
-
             // Create the initial metadata entry, marking the file as invalid.
-            write.newTx();
+            op.newTx();
             db.run(tr -> {
                 tr.set(metaKey, serialize(meta));
                 return null;
@@ -65,19 +82,30 @@ public class BlobStore {
 
             // Upload the data in chunks, using multiple transactions if necessary.
 
-            while (!write.complete()) {
+            while (!op.complete()) {
                 // Write multiple chunks in the same transaction
                 // until we write all the data or run out of time.
-                write.newTx();
+                op.newTx();
                 db.run(tr -> {
                     do {
-                        int offset = write.offset();
-                        byte[] chunk = write.chunk();
-                        tr.set(
-                                Tuple.from(DATA_PREFIX, key, offset).pack(),
-                                Tuple.from(chunk).pack()
-                        );
-                    } while (write.continueInTx());
+                        try {
+                            int offset = op.currentOffset();
+                            byte[] chunk = op.readNextChunk();
+                            if (chunk == null) {
+                                // No more data.
+                                return null;
+                            }
+
+                            Tuple chunkKey = Tuple.from(DATA_PREFIX, key, offset);
+                            // System.err.println(chunkKey);
+                            tr.set(chunkKey.pack(), chunk);
+                        } catch (IOException e) {
+                            // Failed reading from input.
+                            tr.cancel();
+                            op.setThrowable(e);
+                            return null;
+                        }
+                    } while (op.continueInTx());
                     return null;
                 });
             }
@@ -85,18 +113,18 @@ public class BlobStore {
             // Complete the write operation by updating the metadata.
 
             meta.setValid(true);
-            meta.setSize(write.size());
+            meta.setSize(op.size());
             meta.setCreationTime(Instant.now());
 
-            write.newTx();
+            op.newTx();
             db.run(tr -> {
                 tr.set(metaKey, serialize(meta));
                 return null;
             });
 
-            write.close();
-            log.info("Wrote " + write.size() + " bytes in " + write.getTxCount()
-                    + " transactions and " + (write.getElapsedNanos() / NANOS_PER_MILLISECOND) + " ms");
+            op.close();
+            log.info("Wrote " + op.size() + " bytes in " + op.getTxCount()
+                    + " transactions and " + (op.getElapsedNanos() / NANOS_PER_MILLISECOND) + " ms");
         }
     }
 
