@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
 
 public abstract class WriteOp implements AutoCloseable {
 
@@ -28,7 +29,33 @@ public abstract class WriteOp implements AutoCloseable {
     @Setter
     private Throwable throwable;
 
-    abstract byte[] readNextChunk() throws IOException;
+    private transient MessageDigest digest;
+
+    private byte[] hash;
+
+    abstract protected byte[] readNextChunkInternal() throws IOException;
+
+    byte[] readNextChunk() throws IOException {
+        byte[] chunk = readNextChunkInternal();
+        if (chunk == null) {
+            return null;
+        }
+
+        txSize += chunk.length;
+        offset += chunk.length;
+
+        digest.update(chunk);
+
+        return chunk;
+    }
+
+    protected WriteOp() {
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     static WriteOp from(byte[] buf) {
         return new BytesWriteOp(buf);
@@ -64,6 +91,7 @@ public abstract class WriteOp implements AutoCloseable {
 
     @Override
     public void close() {
+        hash = digest.digest();
         endNanos = System.nanoTime();
     }
 

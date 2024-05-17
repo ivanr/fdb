@@ -14,15 +14,13 @@ public class BytesWriteOp extends WriteOp {
     }
 
     @Override
-    byte[] readNextChunk() {
+    protected byte[] readNextChunkInternal() {
         int len = BlobStore.CHUNK_MAX_SIZE_BYTES <= left ? BlobStore.CHUNK_MAX_SIZE_BYTES : left;
         if (len == 0) {
             complete = true;
             return null;
         }
 
-        txSize += len;
-        offset += len;
         left -= len;
 
         return Arrays.copyOfRange(inputBuffer, offset, offset + len);

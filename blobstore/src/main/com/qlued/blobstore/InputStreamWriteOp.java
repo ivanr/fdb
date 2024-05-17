@@ -10,21 +10,18 @@ public class InputStreamWriteOp extends WriteOp {
 
     private byte[] chunk = new byte[BlobStore.CHUNK_MAX_SIZE_BYTES];
 
-    public InputStreamWriteOp(InputStream inputStream) {
+    InputStreamWriteOp(InputStream inputStream) {
         this.inputStream = inputStream;
     }
 
     @Override
-    byte[] readNextChunk() throws IOException {
+    protected byte[] readNextChunkInternal() throws IOException {
 
         int bytesRead = inputStream.read(chunk);
         if (bytesRead == -1) {
             complete = true;
             return null;
         }
-
-        txSize += bytesRead;
-        offset += bytesRead;
 
         if (bytesRead < BlobStore.CHUNK_MAX_SIZE_BYTES) {
             complete = true;
