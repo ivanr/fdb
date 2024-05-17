@@ -10,6 +10,9 @@ public class WriteOperation {
 
     private long startNanos = System.nanoTime();
 
+    @Getter
+    private long endNanos;
+
     private long txStartNanos;
 
     private int offset = 0;
@@ -50,12 +53,16 @@ public class WriteOperation {
         return offset;
     }
 
-    public long getNanos() {
-        return System.nanoTime() - startNanos;
+    public long getElapsedNanos() {
+        return endNanos - startNanos;
     }
 
     public int newTx() {
         txStartNanos = System.nanoTime();
         return ++txCount;
+    }
+
+    public void close() {
+        endNanos = System.nanoTime();
     }
 }

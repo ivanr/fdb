@@ -94,8 +94,9 @@ public class BlobStore {
                 return null;
             });
 
+            write.close();
             log.info("Wrote " + write.size() + " bytes in " + write.getTxCount()
-                    + " transactions and " + (write.getNanos() / NANOS_PER_MILLISECOND) + " ms");
+                    + " transactions and " + (write.getElapsedNanos() / NANOS_PER_MILLISECOND) + " ms");
         }
     }
 
