@@ -1,5 +1,7 @@
 package com.qlued.blobstore;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 
 public class WriteOperation {
@@ -8,9 +10,14 @@ public class WriteOperation {
 
     private long startNanos = System.nanoTime();
 
+    private long txStartNanos;
+
     private int offset = 0;
 
     private int left;
+
+    @Getter
+    private int txCount;
 
     WriteOperation(byte[] value) {
         this.data = value;
@@ -32,7 +39,7 @@ public class WriteOperation {
     }
 
     public boolean continueInTx() {
-        return (left > 0) && (System.nanoTime() - startNanos < BlobStore.TX_TIME_LIMIT_NANOS);
+        return (left > 0) && (System.nanoTime() - txStartNanos < BlobStore.TX_TIME_LIMIT_NANOS);
     }
 
     int offset() {
@@ -41,5 +48,14 @@ public class WriteOperation {
 
     int size() {
         return offset;
+    }
+
+    public long getNanos() {
+        return System.nanoTime() - startNanos;
+    }
+
+    public int newTx() {
+        txStartNanos = System.nanoTime();
+        return ++txCount;
     }
 }

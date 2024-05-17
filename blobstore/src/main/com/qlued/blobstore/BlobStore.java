@@ -29,7 +29,9 @@ public class BlobStore {
 
     static final int CHUNK_MAX_SIZE = 1;
 
-    static final long TX_TIME_LIMIT_NANOS = 1_000;
+    private static final long NANOS_PER_MILLISECOND = 1_000_000L;
+
+    static final long TX_TIME_LIMIT_NANOS = 10 * NANOS_PER_MILLISECOND;
 
     private FDB fdb;
 
@@ -52,18 +54,21 @@ public class BlobStore {
 
         try (Database db = fdb.open()) {
 
+            WriteOperation write = new WriteOperation(value);
+
             // Create the initial metadata entry, marking the file as invalid.
+            write.newTx();
             db.run(tr -> {
                 tr.set(metaKey, serialize(meta));
-                log.info("Write starting");
                 return null;
             });
 
             // Upload the data in chunks, using multiple transactions if necessary.
-            WriteOperation write = new WriteOperation(value);
+
             while (!write.complete()) {
                 // Write multiple chunks in the same transaction
                 // until we write all the data or run out of time.
+                write.newTx();
                 db.run(tr -> {
                     do {
                         int offset = write.offset();
@@ -72,7 +77,6 @@ public class BlobStore {
                                 Tuple.from(DATA_PREFIX, key, offset).pack(),
                                 Tuple.from(chunk).pack()
                         );
-                        log.info("Write chunk offset " + offset + " len " + chunk.length);
                     } while (write.continueInTx());
                     return null;
                 });
@@ -84,11 +88,14 @@ public class BlobStore {
             meta.setSize(write.size());
             meta.setCreationTime(Instant.now());
 
+            write.newTx();
             db.run(tr -> {
                 tr.set(metaKey, serialize(meta));
-                log.info("Write completed");
                 return null;
             });
+
+            log.info("Wrote " + write.size() + " bytes in " + write.getTxCount()
+                    + " transactions and " + (write.getNanos() / NANOS_PER_MILLISECOND) + " ms");
         }
     }
 
