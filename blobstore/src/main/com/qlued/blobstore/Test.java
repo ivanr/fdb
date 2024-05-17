@@ -12,7 +12,8 @@ public class Test {
             data[i] = (byte) i;
         }
 
-        store.put("file.txt", data);
+        store.put("one/file.txt", data);
+        store.put("two/file.txt", data);
 
         List<BlobMetadata> blobs = store.list();
         for (var blob : blobs) {

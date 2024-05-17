@@ -3,10 +3,13 @@ package com.qlued.blobstore;
 import com.apple.foundationdb.Database;
 import com.apple.foundationdb.FDB;
 import com.apple.foundationdb.KeyValue;
+import com.apple.foundationdb.Range;
+import com.apple.foundationdb.tuple.ByteArrayUtil;
 import com.apple.foundationdb.tuple.Tuple;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
@@ -18,9 +21,11 @@ import java.util.List;
 @Slf4j
 public class BlobStore {
 
-    private static final String DATA_PREFIX = "filestore/data/";
+    private static final String DATA_PREFIX = "blobstore/data/";
 
-    private static final String METADATA_PREFIX = "filestore/metadata/";
+    private static final String METADATA_PREFIX = "blobstore/metadata/";
+
+    private static final byte[] TUPLE_DELIMITER = new byte[]{0x02};
 
     static final int CHUNK_MAX_SIZE = 1;
 
@@ -90,7 +95,7 @@ public class BlobStore {
     private byte[] serialize(BlobMetadata meta) {
         try (Output output = new Output(new ByteArrayOutputStream())) {
             kryo.writeObject(output, meta);
-            return output.getBuffer();
+            return output.toBytes();
         }
     }
 
@@ -101,11 +106,21 @@ public class BlobStore {
     }
 
     public List<BlobMetadata> list() {
+        return list("");
+    }
+
+    public List<BlobMetadata> list(@NonNull String relativePrefix) {
         List<BlobMetadata> files = new ArrayList<>();
+
+        Tuple start = Tuple.from(METADATA_PREFIX);
+        byte[] absolutePrefix = ByteArrayUtil.join(
+                start.pack(),
+                TUPLE_DELIMITER,
+                relativePrefix.getBytes());
 
         try (Database db = fdb.open()) {
             db.run(tr -> {
-                for (KeyValue kv : tr.getRange(Tuple.from(METADATA_PREFIX).range())) {
+                for (KeyValue kv : tr.getRange(Range.startsWith(absolutePrefix))) {
                     String name = Tuple.fromBytes(kv.getKey()).getString(1);
                     BlobMetadata meta = deserialize(kv.getValue());
                     meta.setName(name);
