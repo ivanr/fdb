@@ -16,8 +16,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 
 @Slf4j
@@ -171,5 +173,24 @@ public class BlobStore {
         }
 
         return files;
+    }
+
+    public void get(String key) throws Exception {
+        long startNanos = System.nanoTime();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+        Tuple start = Tuple.from(DATA_PREFIX, key);
+        try (Database db = fdb.open()) {
+            db.run(tr -> {
+                for (KeyValue kv : tr.snapshot().getRange(start.range())) {
+                    digest.update(kv.getValue());
+                }
+                return null;
+            });
+        }
+
+        byte[] hash = digest.digest();
+        System.err.println("Hash: " + HexFormat.of().formatHex(hash));
+        System.err.println("Duration: " + ((System.nanoTime() - startNanos) / NANOS_PER_MILLISECOND) + " ms");
     }
 }

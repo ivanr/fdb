@@ -1,12 +1,11 @@
 package com.qlued.blobstore;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.List;
 
 public class Test {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         BlobStore store = new BlobStore();
 
         byte[] data = new byte[10];
@@ -23,5 +22,7 @@ public class Test {
         for (var blob : blobs) {
             System.out.println(blob.getName() + " " + blob.getCreationTime() + " " + blob.getSize() + " " + blob.isValid());
         }
+
+        store.get("two/file.txt");
     }
 }
