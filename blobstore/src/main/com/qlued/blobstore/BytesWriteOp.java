@@ -6,6 +6,8 @@ public class BytesWriteOp extends WriteOp {
 
     private byte[] inputBuffer;
 
+    private int offset;
+
     private int left;
 
     BytesWriteOp(byte[] buf) {
@@ -17,10 +19,10 @@ public class BytesWriteOp extends WriteOp {
     protected byte[] readNextChunkInternal() {
         int len = BlobStore.CHUNK_MAX_SIZE_BYTES <= left ? BlobStore.CHUNK_MAX_SIZE_BYTES : left;
         if (len == 0) {
-            complete = true;
             return null;
         }
 
+        offset += len;
         left -= len;
 
         return Arrays.copyOfRange(inputBuffer, offset, offset + len);

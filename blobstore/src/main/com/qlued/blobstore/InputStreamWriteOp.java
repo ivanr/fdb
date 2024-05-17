@@ -19,12 +19,10 @@ public class InputStreamWriteOp extends WriteOp {
 
         int bytesRead = inputStream.read(chunk);
         if (bytesRead == -1) {
-            complete = true;
             return null;
         }
 
         if (bytesRead < BlobStore.CHUNK_MAX_SIZE_BYTES) {
-            complete = true;
             return Arrays.copyOfRange(chunk, 0, bytesRead);
         } else {
             return chunk;

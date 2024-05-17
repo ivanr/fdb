@@ -49,6 +49,7 @@ public class BlobStore {
     static {
         kryo = new Kryo();
         kryo.register(BlobMetadata.class);
+        kryo.register(byte[].class);
         kryo.register(Instant.class);
     }
 
@@ -82,7 +83,7 @@ public class BlobStore {
 
             // Upload the data in chunks, using multiple transactions if necessary.
 
-            while (!op.complete()) {
+            while (!op.isComplete()) {
                 // Write multiple chunks in the same transaction
                 // until we write all the data or run out of time.
                 op.newTx();
@@ -115,6 +116,7 @@ public class BlobStore {
             meta.setValid(true);
             meta.setSize(op.size());
             meta.setCreationTime(Instant.now());
+            meta.setHash(op.getHash());
 
             op.newTx();
             db.run(tr -> {

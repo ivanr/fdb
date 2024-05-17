@@ -16,11 +16,12 @@ public abstract class WriteOp implements AutoCloseable {
 
     private long txStartNanos;
 
-    protected long txSize;
+    private long txSize;
 
-    protected int offset = 0;
+    private int totalSize = 0;
 
-    protected boolean complete = false;
+    @Getter
+    private boolean complete = false;
 
     @Getter
     private int txCount;
@@ -31,6 +32,7 @@ public abstract class WriteOp implements AutoCloseable {
 
     private transient MessageDigest digest;
 
+    @Getter
     private byte[] hash;
 
     abstract protected byte[] readNextChunkInternal() throws IOException;
@@ -38,11 +40,13 @@ public abstract class WriteOp implements AutoCloseable {
     byte[] readNextChunk() throws IOException {
         byte[] chunk = readNextChunkInternal();
         if (chunk == null) {
+            complete = true;
+            hash = digest.digest();
             return null;
         }
 
         txSize += chunk.length;
-        offset += chunk.length;
+        totalSize += chunk.length;
 
         digest.update(chunk);
 
@@ -72,11 +76,11 @@ public abstract class WriteOp implements AutoCloseable {
     }
 
     int currentOffset() {
-        return offset;
+        return totalSize;
     }
 
     int size() {
-        return offset;
+        return totalSize;
     }
 
     long getElapsedNanos() {
@@ -91,11 +95,6 @@ public abstract class WriteOp implements AutoCloseable {
 
     @Override
     public void close() {
-        hash = digest.digest();
         endNanos = System.nanoTime();
-    }
-
-    boolean complete() {
-        return complete;
     }
 }

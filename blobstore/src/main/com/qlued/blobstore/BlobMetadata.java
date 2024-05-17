@@ -14,4 +14,7 @@ public class BlobMetadata {
     private Integer size;
 
     private Instant creationTime;
+
+    private byte[] hash;
+
 }
