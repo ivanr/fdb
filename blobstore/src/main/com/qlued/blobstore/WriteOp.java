@@ -18,7 +18,11 @@ public abstract class WriteOp implements AutoCloseable {
 
     private long txSize;
 
-    private int totalSize = 0;
+    @Getter
+    private int totalSize;
+
+    @Getter
+    private int totalChunks;
 
     @Getter
     private boolean complete = false;
@@ -47,6 +51,7 @@ public abstract class WriteOp implements AutoCloseable {
 
         txSize += chunk.length;
         totalSize += chunk.length;
+        totalChunks++;
 
         digest.update(chunk);
 
@@ -76,10 +81,6 @@ public abstract class WriteOp implements AutoCloseable {
     }
 
     int currentOffset() {
-        return totalSize;
-    }
-
-    int size() {
         return totalSize;
     }
 

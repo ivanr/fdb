@@ -11,9 +11,13 @@ public class BlobMetadata {
 
     private boolean valid;
 
-    private Integer size;
-
     private Instant creationTime;
+
+    private int size;
+
+    private int chunks;
+
+    private int chunkSize;
 
     private byte[] hash;
 

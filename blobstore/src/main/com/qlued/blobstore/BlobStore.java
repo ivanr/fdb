@@ -71,6 +71,7 @@ public class BlobStore {
 
         byte[] metaKey = Tuple.from(METADATA_PREFIX, key).pack();
         BlobMetadata meta = new BlobMetadata();
+        meta.setChunkSize(CHUNK_MAX_SIZE_BYTES);
 
         try (Database db = fdb.open()) {
 
@@ -114,7 +115,8 @@ public class BlobStore {
             // Complete the write operation by updating the metadata.
 
             meta.setValid(true);
-            meta.setSize(op.size());
+            meta.setSize(op.getTotalSize());
+            meta.setChunks(op.getTotalChunks());
             meta.setCreationTime(Instant.now());
             meta.setHash(op.getHash());
 
@@ -125,7 +127,7 @@ public class BlobStore {
             });
 
             op.close();
-            log.info("Wrote " + op.size() + " bytes in " + op.getTxCount()
+            log.info("Wrote " + op.getTotalSize() + " bytes in " + op.getTxCount()
                     + " transactions and " + (op.getElapsedNanos() / NANOS_PER_MILLISECOND) + " ms");
         }
     }

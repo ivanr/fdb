@@ -4,7 +4,7 @@ Todos
 
 - Use nicer keys; no need to use tuples
 
-- Store chunk size in the metadata
+- Optimize transactions
 
 - Add support for blob attributes
 
@@ -14,9 +14,9 @@ Todos
 
 - Add support for buckets
 
-- TTL, size limits (FIFO)
+- TTL, bucket size limits (FIFO)
 
-- - For portability, use JSON to serialize blob metadata
+- For portability, use JSON to serialize blob metadata
 
 
 Resources
