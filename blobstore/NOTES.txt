@@ -2,6 +2,8 @@
 Todos
 =====
 
+- Implement a good read interface
+
 - Use nicer keys; no need to use tuples
 
 - Optimize transactions
