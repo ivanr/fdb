@@ -37,6 +37,8 @@ Todos
 Resources
 =========
 
+- https://apple.github.io/foundationdb/developer-guide.html
+
 - https://apple.github.io/foundationdb/data-modeling.html
 
 - https://apple.github.io/foundationdb/javadoc/
