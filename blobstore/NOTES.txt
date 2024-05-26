@@ -33,6 +33,10 @@ Todos
 
 - For portability, use JSON to serialize blob metadata
 
+- Use parallel reads and writes for better throughput
+
+- Local (client) caching of the blocks
+
 
 Resources
 =========
