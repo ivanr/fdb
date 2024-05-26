@@ -40,8 +40,8 @@ public class BlobStore {
     static final long TX_TIME_LIMIT_NANOS = 4_000 * NANOS_PER_MILLISECOND;
 
     // FoundationDB limits affected data within a transaction to 10 MB. I've
-    // seen smaller sizes recommended (e.g., 1MB), but in my limited testing
-    // of one blob write that results in 3x worse throughput.
+    // seen smaller sizes recommended (e.g., 1MB), but in my limited testing,
+    // with a single blob, that results in 3x worse throughput.
     public static final int TX_SIZE_LIMIT_BYTES = 9_000_000;
 
     private FDB fdb;

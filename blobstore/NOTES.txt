@@ -4,7 +4,9 @@ Todos
 
 - Implement a good read interface
 
-- Put all data under a directory
+- Use at least one Directory, or many Directories to store buckets?
+
+  https://forums.foundationdb.org/t/whats-the-purpose-of-the-directory-layer/677/2
 
 - Use nicer keys; no need to use tuples
 
